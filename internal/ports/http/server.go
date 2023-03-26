@@ -65,7 +65,9 @@ func NewPort(
 }
 
 func (p *Port) Start() {
-	p.logger.Infof("Server will run shortly at http://localhost%s", p.server.Addr)
+	p.logger.WithFields(logs.Fields{
+		"host": fmt.Sprintf("http://localhost%s", p.server.Addr),
+	}).Info("http server will run shortly:")
 	if err := p.server.ListenAndServe(); err != nil {
 		p.logger.Infof("The http server has been shutdown: %v", err)
 	}

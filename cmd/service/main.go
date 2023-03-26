@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/flowck/cargotracker_ddd_golang/internal/ports/rpc"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
 
@@ -31,6 +33,7 @@ const (
 
 type Config struct {
 	Port              int16  `envconfig:"PORT"`
+	GrpcPort          int16  `envconfig:"GRPC_PORT"`
 	DebugMode         string `envconfig:"FLAG_DEBUG_MODE"`
 	AllowedCorsOrigin string `envconfig:"ALLOWED_CORS_ORIGIN"`
 	DatabaseUrl       string `envconfig:"DATABASE_URL"`
@@ -86,11 +89,15 @@ func main() {
 		Queries: app.Queries{},
 	}
 
-	// l
-	logger.Info(application.Commands.BookNewCargo.Execute(ctx, commands.BookNewCargo{}))
-
 	httpPort := http.NewPort(ctx, cfg.Port, strings.Split(cfg.AllowedCorsOrigin, ";"), application, logger)
-	httpPort.Start()
+	go func() { httpPort.Start() }()
+
+	rpcPort := rpc.NewPort(logger)
+	go func() {
+		if err = rpcPort.Start(cfg.GrpcPort); err != nil {
+			logger.Fatal(err)
+		}
+	}()
 
 	<-done
 	logger.Info("Preparing to shutdown gracefully")
@@ -99,6 +106,7 @@ func main() {
 	defer cancelCtxTerm()
 
 	httpPort.Stop(ctxTerm)
+	rpcPort.Stop()
 
 	logger.Info("The service has been terminated")
 }

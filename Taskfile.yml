@@ -77,6 +77,14 @@ tasks:
           -generate client,types,spec \
           ./api/openapi.yml > ./tests/client/client.gen.go
 
+  proto:
+    cmds:
+      - |
+        protoc --proto_path=./api \
+          --go_opt=paths=source_relative --go_out=./internal/ports/grpc/static \
+          --go-grpc_opt=paths=source_relative --go-grpc_out=./internal/ports/grpc/static \
+          ./api/*.proto
+
   docker:up:
     cmds:
       - docker compose up -d

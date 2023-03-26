@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option go_package = "github.com/flowck/cargotracker_ddd_golang/internal/ports/grpc/static";
+package cargotracker;
+
+service CargoTracker {
+  rpc BookNewCargo(Empty) returns (Empty);
+}
+
+message Empty {}
