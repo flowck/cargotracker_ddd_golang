@@ -46,10 +46,7 @@ func main() {
 	}
 
 	logger := logs.New(cfg.DebugMode == "enabled")
-	logger.WithFields(logs.Fields{
-		"ServiceName": ServiceName,
-		"version":     Version,
-	}).Info()
+	logger.WithFields(logs.Fields{"ServiceName": ServiceName, "version": Version}).Info()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -80,7 +77,7 @@ func main() {
 		logger.Infof("trace provider has been shutdown: %v", traceProvider.Shutdown(ctx))
 	}()
 	otel.SetTracerProvider(traceProvider)
-	tracer := traceProvider.Tracer("cargotracker")
+	tracer := traceProvider.Tracer(ServiceName)
 
 	application := &app.App{
 		Commands: app.Commands{
@@ -130,7 +127,7 @@ func newOtelTraceProvider(exp sdktrace.SpanExporter) (*sdktrace.TracerProvider, 
 		resource.Default(),
 		resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceName("cargotracker"),
+			semconv.ServiceName(ServiceName),
 		),
 	)
 
