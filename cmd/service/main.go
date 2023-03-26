@@ -8,13 +8,25 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/flowck/cargotracker_ddd_golang/internal/app"
-	"github.com/flowck/cargotracker_ddd_golang/internal/common/logs"
-	"github.com/flowck/cargotracker_ddd_golang/internal/common/psql"
-	"github.com/flowck/cargotracker_ddd_golang/internal/ports/http"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+
+	"github.com/flowck/cargotracker_ddd_golang/internal/app"
+	"github.com/flowck/cargotracker_ddd_golang/internal/app/commands"
+	"github.com/flowck/cargotracker_ddd_golang/internal/common/logs"
+	"github.com/flowck/cargotracker_ddd_golang/internal/common/observability"
+	"github.com/flowck/cargotracker_ddd_golang/internal/common/psql"
+	"github.com/flowck/cargotracker_ddd_golang/internal/ports/http"
+)
+
+const (
+	ServiceName = "cargotracker"
+	Version     = ""
 )
 
 type Config struct {
@@ -31,7 +43,10 @@ func main() {
 	}
 
 	logger := logs.New(cfg.DebugMode == "enabled")
-	logger.Info("cargotracker")
+	logger.WithFields(logs.Fields{
+		"ServiceName": ServiceName,
+		"version":     Version,
+	}).Info()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -51,10 +66,28 @@ func main() {
 
 	// txProvider := transaction.NewSQLProvider(db, logger)
 
-	application := &app.App{
-		Commands: app.Commands{},
-		Queries:  app.Queries{},
+	//
+	// OpenTelemetry Tracing
+	//
+	traceProvider, err := newOtelTraceProvider(nil)
+	if err != nil {
+		logger.Fatalf("unable to create trace provider: %v", err)
 	}
+	defer func() {
+		logger.Infof("trace provider has been shutdown: %v", traceProvider.Shutdown(ctx))
+	}()
+	otel.SetTracerProvider(traceProvider)
+	tracer := traceProvider.Tracer("cargotracker")
+
+	application := &app.App{
+		Commands: app.Commands{
+			BookNewCargo: observability.NewCommandDecorator[commands.BookNewCargo](commands.NewBookNewCargo(), logger, tracer),
+		},
+		Queries: app.Queries{},
+	}
+
+	// l
+	logger.Info(application.Commands.BookNewCargo.Execute(ctx, commands.BookNewCargo{}))
 
 	httpPort := http.NewPort(ctx, cfg.Port, strings.Split(cfg.AllowedCorsOrigin, ";"), application, logger)
 	httpPort.Start()
@@ -78,4 +111,27 @@ func getConfig() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+/*func newOtelExporter() sdktrace.SpanExporter {
+	return nil
+}*/
+
+func newOtelTraceProvider(exp sdktrace.SpanExporter) (*sdktrace.TracerProvider, error) {
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName("cargotracker"),
+		),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(r),
+	), nil
 }

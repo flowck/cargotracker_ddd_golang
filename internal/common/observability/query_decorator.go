@@ -3,6 +3,8 @@ package observability
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/flowck/cargotracker_ddd_golang/internal/common/logs"
 )
 
@@ -11,12 +13,19 @@ type queryDecorator[Q any, R any] struct {
 	base   QueryHandler[Q, R]
 }
 
-func NewQueryDecorator[Q any, R any](base QueryHandler[Q, R], logger *logs.Logger) queryDecorator[Q, R] {
+func NewQueryDecorator[Q any, R any](
+	base QueryHandler[Q, R],
+	logger *logs.Logger,
+	tracer trace.Tracer,
+) queryDecorator[Q, R] {
 	return queryDecorator[Q, R]{
 		logger: logger,
 		base: queryMetricsDecorator[Q, R]{
 			base: queryLoggingDecorator[Q, R]{
-				base:   base,
+				base: queryTracingDecorator[Q, R]{
+					base:   base,
+					tracer: tracer,
+				},
 				logger: logger,
 			},
 		},

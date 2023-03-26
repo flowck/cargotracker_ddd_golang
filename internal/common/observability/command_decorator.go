@@ -3,6 +3,8 @@ package observability
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/flowck/cargotracker_ddd_golang/internal/common/logs"
 )
 
@@ -11,13 +13,20 @@ type commandDecorator[C any] struct {
 	base   CommandHandler[C]
 }
 
-func NewCommandDecorator[C any](base CommandHandler[C], logger *logs.Logger) commandDecorator[C] {
+func NewCommandDecorator[C any](
+	base CommandHandler[C],
+	logger *logs.Logger,
+	tracer trace.Tracer,
+) commandDecorator[C] {
 	return commandDecorator[C]{
 		logger: logger,
 		base: commandMetricsDecorator[C]{
-			base: commandLoggingDecorator[C]{
-				base:   base,
-				logger: logger,
+			base: commandTracingDecorator[C]{
+				tracer: tracer,
+				base: commandLoggingDecorator[C]{
+					base:   base,
+					logger: logger,
+				},
 			},
 		},
 	}
