@@ -8,8 +8,8 @@ jobs:
   ci:
     uses: ./.github/workflows/ci.yml
 
-  tag:
-    uses: ./.github/workflows/tag.yml
-    needs: ci
-    secrets:
-      PAT: ${{ secrets.PAT }}
+  # tag:
+  #   uses: ./.github/workflows/tag.yml
+  #   needs: ci
+  #   secrets:
+  #     PAT: ${{ secrets.PAT }}
