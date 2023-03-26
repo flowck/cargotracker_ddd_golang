@@ -1,8 +1,8 @@
-# `news_service_ddd_golang`
+# `cargotracker_ddd_golang`
 
 [![ci](https://github.com/flowck/news_service_ddd_golang/actions/workflows/ci.yml/badge.svg)](https://github.com/flowck/news_service_ddd_golang/actions/workflows/ci.yml)
 
-Re-implementation of the project [go-ddd-api](https://github.com/jojoarianto/go-ddd-api).
+Re-implementation of the project [citerus/dddsample-core](https://github.com/citerus/dddsample-core).
 
 ## Guide to run locally
 
