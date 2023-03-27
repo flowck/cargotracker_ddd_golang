@@ -1,6 +1,7 @@
 package voyage
 
 import (
+	"errors"
 	"time"
 
 	"github.com/flowck/cargotracker_ddd_golang/internal/domain"
@@ -13,6 +14,38 @@ type CarrierMovement struct {
 	departureLocation location.Location
 	arrivalTime       time.Time
 	departureTime     time.Time
+}
+
+func NewCarrierMovement(
+	ID domain.ID,
+	arrivalLocation location.Location,
+	departureLocation location.Location,
+	arrivalTime time.Time,
+	departureTime time.Time,
+) (*CarrierMovement, error) {
+	if ID.IsZero() {
+		return nil, errors.New("id cannot be invalid")
+	}
+
+	if arrivalLocation.IsEmpty() {
+		return nil, errors.New("arrivalLocation cannot be invalid")
+	}
+
+	if departureLocation.IsEmpty() {
+		return nil, errors.New("departureLocation cannot be invalid")
+	}
+
+	if arrivalTime.After(departureTime) {
+		return nil, errors.New("arrivalTime cannot be after departure time")
+	}
+
+	return &CarrierMovement{
+		id:                ID,
+		arrivalLocation:   arrivalLocation,
+		departureLocation: departureLocation,
+		arrivalTime:       arrivalTime,
+		departureTime:     departureTime,
+	}, nil
 }
 
 func (c *CarrierMovement) Id() domain.ID {
