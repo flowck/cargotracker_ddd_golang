@@ -6,6 +6,10 @@ import (
 	"github.com/flowck/cargotracker_ddd_golang/internal/domain"
 )
 
+//
+// Voyage
+//
+
 type Voyage struct {
 	id               domain.ID
 	number           Number

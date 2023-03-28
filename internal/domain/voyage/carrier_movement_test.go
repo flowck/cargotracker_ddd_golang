@@ -106,7 +106,7 @@ func TestNewCarrierMovement(t *testing.T) {
 }
 
 func fixtureLocation(t *testing.T) *location.Location {
-	code, err := location.NewUnitedNationsLocationCodeFromCountry(gofakeit.Country())
+	code, err := location.NewUnitedNationsLocationCodeFromCountry("US")
 	require.Nil(t, err)
 
 	l, err := location.New(
